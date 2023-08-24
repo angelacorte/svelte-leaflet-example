@@ -1,19 +1,16 @@
 <script>
   import * as L from 'leaflet';
-  // If you're playing with this in the Svelte REPL, import the CSS using the
-  // syntax in svelte:head instead. For normal development, this is better.
   import 'leaflet/dist/leaflet.css';
   import Geolocation from "svelte-geolocation";
+  import {stations, ChargingStationStatus} from './lib/Stations.svelte'
+  import {redMarker, blueMarker, orangeMarker, greenMarker} from './lib/Markers.svelte'
+
   let map;
 
   let getPosition = false;
   let coords = []; // pos 0 is longitude, pos 1 is latitude
   let uni = [44.14781236057191, 12.235733504482019];
 
-  let locations = [[44.14781335057191, 12.235743504482019],
-    [44.14781437057191, 12.236753504482019],
-    [44.14781538057191, 12.237763504482019],
-    [44.14781639057191, 12.238773504482019]]
 
   function createMap(container) {
     //setView() wants [latitude, longitude]
@@ -27,9 +24,24 @@
               maxZoom: 23,
             }
     ).addTo(m);
-    let marker = L.marker([coords[1], coords[0]]).addTo(m).bindPopup('you are here').openPopup();
-    locations.forEach(loc => {
-      let mark = L.marker(loc).addTo(m).bindPopup("Pos");
+    L.marker([coords[1], coords[0]]).addTo(m).bindPopup('you are here').openPopup();
+    stations.forEach(station => {
+      let icon
+      switch(station.status) {
+        case ChargingStationStatus.FREE:
+          icon = greenMarker;
+          break;
+        case ChargingStationStatus.CHARGING:
+          icon = orangeMarker;
+          break;
+        case ChargingStationStatus.RESERVED:
+          icon = blueMarker;
+          break;
+        case ChargingStationStatus.UNAVAILABLE:
+          icon = redMarker;
+          break;
+      }
+      L.marker(station.location, {icon: icon}).addTo(m).bindPopup(station.provider + " " + station.name + "\nStatus is " + station.status);
     })
     return m;
   }
@@ -66,7 +78,6 @@
     {/if}
     {#if success}
       <div id="app" style="height:500px;width:500px" use:mapAction></div>
-
     {/if}
     {#if error}
       An error occurred. {error.code} {error.message}
